@@ -49,11 +49,16 @@ extension StructuredText {
           let rowRun = rowRuns[rowIndex]
           let rowContent = content[rowRun.range]
           let columnRuns = rowContent.blockRuns(parent: rowRun.intent)
+          // Foundation omits a run for any empty cell, so iterating `columnRuns`
+          // positionally would shift every cell after the gap one column left
+          // (an empty leading header collapses onto the wrong columns). Instead
+          // lay each cell out at the column ordinal carried by its `tableCell`
+          // intent, leaving an empty cell where a run is missing.
+          let cellRanges = Self.cellRanges(columnRuns, declaredColumns: columns.count)
 
           GridRow {
-            ForEach(columnRuns.indices, id: \.self) { columnIndex in
-              let cellRun = columnRuns[columnIndex]
-              let cellContent = rowContent[cellRun.range]
+            ForEach(cellRanges.indices, id: \.self) { columnIndex in
+              let cellContent = cellRanges[columnIndex].map { rowContent[$0] }
 
               TableCell(cellContent, row: rowIndex, column: columnIndex)
                 .gridColumnAlignment(alignment(for: columnIndex))
@@ -61,6 +66,46 @@ extension StructuredText {
           }
         }
       }
+    }
+
+    /// Maps a row's block runs to a dense, column-indexed array of cell ranges.
+    ///
+    /// Foundation tags every table cell with its ordinal via
+    /// `PresentationIntent.Kind.tableCell(columnIndex:)` but emits no run at all
+    /// for a cell with no text. Placing runs by that ordinal — rather than by
+    /// their position in `columnRuns` — keeps columns aligned across rows even
+    /// when a cell is empty. Slots with no run are `nil` and render blank.
+    ///
+    /// If any run lacks an ordinal (defensive: malformed/unexpected input) we
+    /// fall back to the original positional layout for that row.
+    private static func cellRanges(
+      _ columnRuns: AttributedString.BlockRuns,
+      declaredColumns: Int
+    ) -> [Range<AttributedString.Index>?] {
+      let ordinals = columnRuns.indices.map { columnOrdinal(of: columnRuns[$0]) }
+
+      guard ordinals.allSatisfy({ $0 != nil }) else {
+        return columnRuns.indices.map { columnRuns[$0].range }
+      }
+
+      let maxOrdinal = ordinals.compactMap { $0 }.max() ?? -1
+      let width = max(declaredColumns, maxOrdinal + 1)
+      var ranges = [Range<AttributedString.Index>?](repeating: nil, count: width)
+      for runIndex in columnRuns.indices {
+        if let column = ordinals[runIndex], column < width {
+          ranges[column] = columnRuns[runIndex].range
+        }
+      }
+      return ranges
+    }
+
+    private static func columnOrdinal(
+      of run: AttributedString.BlockRuns.BlockRun
+    ) -> Int? {
+      guard case .tableCell(let columnIndex)? = run.intent?.kind else {
+        return nil
+      }
+      return columnIndex
     }
 
     private var indentationLevel: Int {

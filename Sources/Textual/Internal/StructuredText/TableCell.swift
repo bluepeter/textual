@@ -4,10 +4,13 @@ extension StructuredText {
   struct TableCell: View {
     @Environment(\.tableCellStyle) private var tableCellStyle
 
-    private let content: AttributedSubstring
+    private let content: AttributedSubstring?
     private let identifier: TableCell.Identifier
 
-    init(_ content: AttributedSubstring, row: Int, column: Int) {
+    /// `content` is optional because Foundation's markdown parser omits a run for
+    /// any cell that has no text (e.g. an empty leading header cell). Such cells
+    /// must still render so the column stays aligned, hence a `nil` content slot.
+    init(_ content: AttributedSubstring?, row: Int, column: Int) {
       self.content = content
       self.identifier = .init(row: row, column: column)
     }
@@ -30,13 +33,13 @@ extension StructuredText {
     }
 
     private var label: some View {
-      WithInlineStyle(AttributedString(content)) {
+      WithInlineStyle(content.map(AttributedString.init) ?? AttributedString()) {
         TextFragment($0)
       }
     }
 
     private var indentationLevel: Int {
-      content.presentationIntent?.indentationLevel ?? 0
+      content?.presentationIntent?.indentationLevel ?? 0
     }
   }
 }

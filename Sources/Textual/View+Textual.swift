@@ -177,24 +177,6 @@ extension TextualNamespace where Base: View {
     base.environment(\.overflowMode, overflowMode)
   }
 
-  /// Excludes a region from StructuredText text-selection hit testing so embedded
-  /// controls (buttons, toggles) continue to receive taps.
-  ///
-  /// Pair with ``Overflow`` for scrollable code blocks. Apply to any interactive
-  /// chrome rendered inside a ``StructuredText`` style.
-  @inlinable
-  public func interactiveExclusionRegion() -> some View {
-    base.background(
-      GeometryReader { geometry in
-        Color.clear
-          .preference(
-            key: OverflowFrameKey.self,
-            value: [geometry.frame(in: .textContainer)]
-          )
-      }
-    )
-  }
-
   /// Sets the inline style used by ``InlineText`` and ``StructuredText``.
   @inlinable
   public func inlineStyle(_ style: InlineStyle) -> some View {

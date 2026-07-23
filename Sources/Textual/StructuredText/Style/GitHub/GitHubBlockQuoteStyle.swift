@@ -17,6 +17,13 @@ extension StructuredText {
           .textual.padding(.horizontal, .fontScaled(1))
       }
     }
+
+    public func makeBlockSpacing(
+      configuration _: BlockSpacingConfiguration,
+      environment _: TextEnvironmentValues
+    ) -> BlockSpacing {
+      .init(top: 0, bottom: 16)
+    }
   }
 }
 

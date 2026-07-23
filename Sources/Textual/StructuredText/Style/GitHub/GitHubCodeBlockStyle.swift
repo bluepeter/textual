@@ -17,7 +17,13 @@ extension StructuredText {
       }
       .background(DynamicColor.gitHubSecondaryBackground)
       .clipShape(RoundedRectangle(cornerRadius: 6))
-      .textual.blockSpacing(.init(top: 0, bottom: 16))
+    }
+
+    public func makeBlockSpacing(
+      configuration _: BlockSpacingConfiguration,
+      environment _: TextEnvironmentValues
+    ) -> BlockSpacing {
+      .init(top: 0, bottom: 16)
     }
   }
 }

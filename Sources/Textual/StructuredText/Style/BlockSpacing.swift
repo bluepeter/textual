@@ -37,6 +37,15 @@ extension StructuredText.BlockSpacing: FontScalable {
   }
 }
 
+extension StructuredText.BlockSpacing {
+  func collapsedDistance(
+    to next: StructuredText.BlockSpacing,
+    fallback: @autoclosure () -> CGFloat
+  ) -> CGFloat {
+    [bottom, next.top].compactMap(\.self).max() ?? fallback()
+  }
+}
+
 extension FontScaled where Value == StructuredText.BlockSpacing {
   /// A convenience constructor for font-scaled `StructuredText.BlockSpacing` values.
   public static func fontScaled(top: CGFloat? = nil, bottom: CGFloat? = nil) -> Self {

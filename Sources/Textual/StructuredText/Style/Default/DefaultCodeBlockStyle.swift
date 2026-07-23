@@ -22,7 +22,13 @@ extension StructuredText {
         RoundedRectangle(cornerRadius: 4, style: .continuous)
           .stroke(DynamicColor.grid, lineWidth: 1)
       )
-      .textual.blockSpacing(.fontScaled(top: 0.88, bottom: 0))
+    }
+
+    public func makeBlockSpacing(
+      configuration _: BlockSpacingConfiguration,
+      environment: TextEnvironmentValues
+    ) -> BlockSpacing {
+      FontScaled.fontScaled(top: 0.88, bottom: 0).resolve(in: environment)
     }
   }
 }

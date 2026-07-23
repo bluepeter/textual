@@ -14,8 +14,14 @@ extension StructuredText {
       configuration.label
         .textual.fontScale(fontScale)
         .textual.lineSpacing(.fontScaled(lineSpacing))
-        .textual.blockSpacing(.fontScaled(top: 1.6, bottom: 0.8))
         .fontWeight(.semibold)
+    }
+
+    public func makeBlockSpacing(
+      configuration _: BlockSpacingConfiguration,
+      environment: TextEnvironmentValues
+    ) -> BlockSpacing {
+      FontScaled.fontScaled(top: 1.6, bottom: 0.8).resolve(in: environment)
     }
   }
 }

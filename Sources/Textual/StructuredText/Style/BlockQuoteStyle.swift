@@ -5,7 +5,7 @@ extension StructuredText {
   ///
   /// Apply a block quote style with ``TextualNamespace/blockQuoteStyle(_:)`` or through a bundled
   /// ``StructuredText/Style``.
-  public protocol BlockQuoteStyle: DynamicProperty {
+  public protocol BlockQuoteStyle: DynamicProperty, BlockSpacingProvider {
     associatedtype Body: View
 
     /// Creates a view that represents a block quote.

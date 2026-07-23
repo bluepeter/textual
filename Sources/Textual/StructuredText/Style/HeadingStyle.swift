@@ -23,7 +23,7 @@ extension StructuredText {
   ///
   /// Apply a heading style with ``TextualNamespace/headingStyle(_:)`` or through a bundled
   /// ``StructuredText/Style``.
-  public protocol HeadingStyle: DynamicProperty {
+  public protocol HeadingStyle: DynamicProperty, BlockSpacingProvider {
     associatedtype Body: View
 
     /// Creates a view that represents a heading.

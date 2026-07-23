@@ -11,7 +11,6 @@ extension StructuredText {
     public func makeBody(configuration: Configuration) -> some View {
       configuration.label
         .textual.tableCellSpacing(horizontal: Self.borderWidth, vertical: Self.borderWidth)
-        .textual.blockSpacing(.init(top: 0, bottom: 16))
         .textual.tableBackground { layout in
           Canvas { context, _ in
             for bounds in layout.evenRowBounds {
@@ -34,6 +33,13 @@ extension StructuredText {
         }
         .padding(Self.borderWidth)
         .border(DynamicColor.gitHubBorder, width: Self.borderWidth)
+    }
+
+    public func makeBlockSpacing(
+      configuration _: BlockSpacingConfiguration,
+      environment _: TextEnvironmentValues
+    ) -> BlockSpacing {
+      .init(top: 0, bottom: 16)
     }
   }
 }

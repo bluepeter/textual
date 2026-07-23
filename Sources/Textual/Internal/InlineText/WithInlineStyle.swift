@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - Overview
-//
+
 // `WithInlineStyle` applies an `InlineStyle` to an `AttributedString` before it reaches the
 // rendering pipeline.
 //
@@ -19,7 +19,7 @@ struct WithInlineStyle<Content: View>: View {
   @Environment(\.inlineStyle) private var style
   @Environment(\.textEnvironment) private var environment
 
-  @State private var output: AttributedString?
+  @State private var resolver = Resolver()
 
   private let input: AttributedString
   private let content: (AttributedString) -> Content
@@ -33,51 +33,71 @@ struct WithInlineStyle<Content: View>: View {
   }
 
   var body: some View {
-    content(output ?? AttributedString())
-      .onChange(of: Tuple(input, style, environment), initial: true) { _, newValue in
-        resolve(
-          attributedString: newValue.values.0,
-          style: newValue.values.1,
-          in: newValue.values.2
-        )
-      }
+    content(
+      resolver.resolve(
+        attributedString: input,
+        style: style,
+        environment: environment
+      )
+    )
   }
+}
 
-  private func resolve(
-    attributedString: AttributedString,
-    style: InlineStyle,
-    in environment: TextEnvironmentValues
-  ) {
-    var output = attributedString
+extension WithInlineStyle {
+  @MainActor final class Resolver {
+    private var input: AttributedString?
+    private var style: InlineStyle?
+    private var environment: TextEnvironmentValues?
+    private var output = AttributedString()
 
-    for run in attributedString.runs {
-      var attributes = AttributeContainer()
-
-      if let intent = run.inlinePresentationIntent {
-        if intent.contains(.code) {
-          style.code.apply(in: &attributes, environment: environment)
-        }
-
-        if intent.contains(.emphasized) {
-          style.emphasis.apply(in: &attributes, environment: environment)
-        }
-
-        if intent.contains(.stronglyEmphasized) {
-          style.strong.apply(in: &attributes, environment: environment)
-        }
-
-        if intent.contains(.strikethrough) {
-          style.strikethrough.apply(in: &attributes, environment: environment)
-        }
+    func resolve(
+      attributedString: AttributedString,
+      style: InlineStyle,
+      environment: TextEnvironmentValues
+    ) -> AttributedString {
+      guard
+        attributedString != input
+          || style != self.style
+          || environment != self.environment
+      else {
+        return output
       }
 
-      if run.link != nil {
-        style.link.apply(in: &attributes, environment: environment)
+      var output = attributedString
+
+      for run in attributedString.runs {
+        var attributes = AttributeContainer()
+
+        if let intent = run.inlinePresentationIntent {
+          if intent.contains(.code) {
+            style.code.apply(in: &attributes, environment: environment)
+          }
+
+          if intent.contains(.emphasized) {
+            style.emphasis.apply(in: &attributes, environment: environment)
+          }
+
+          if intent.contains(.stronglyEmphasized) {
+            style.strong.apply(in: &attributes, environment: environment)
+          }
+
+          if intent.contains(.strikethrough) {
+            style.strikethrough.apply(in: &attributes, environment: environment)
+          }
+        }
+
+        if run.link != nil {
+          style.link.apply(in: &attributes, environment: environment)
+        }
+
+        output[run.range].mergeAttributes(attributes, mergePolicy: .keepNew)
       }
 
-      output[run.range].mergeAttributes(attributes, mergePolicy: .keepNew)
+      input = attributedString
+      self.style = style
+      self.environment = environment
+      self.output = output
+      return output
     }
-
-    self.output = output
   }
 }

@@ -37,7 +37,13 @@ extension StructuredText {
           .padding(Self.borderWidth)
       }
       .textual.tableCellSpacing(horizontal: Self.borderWidth, vertical: Self.borderWidth)
-      .textual.blockSpacing(.fontScaled(top: 1.6, bottom: 1.6))
+    }
+
+    public func makeBlockSpacing(
+      configuration _: BlockSpacingConfiguration,
+      environment: TextEnvironmentValues
+    ) -> BlockSpacing {
+      FontScaled.fontScaled(top: 1.6, bottom: 1.6).resolve(in: environment)
     }
   }
 }

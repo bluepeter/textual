@@ -5,7 +5,7 @@ extension StructuredText {
   ///
   /// You can set a paragraph style using the ``TextualNamespace/paragraphStyle(_:)`` modifier
   /// or through a bundled ``StructuredText/Style``.
-  public protocol ParagraphStyle: DynamicProperty {
+  public protocol ParagraphStyle: DynamicProperty, BlockSpacingProvider {
     associatedtype Body: View
 
     /// Creates a view that represents a paragraph.

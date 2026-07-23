@@ -10,7 +10,13 @@ extension StructuredText {
       Divider()
         .frame(minHeight: 1)
         .overlay(DynamicColor.grid)
-        .textual.blockSpacing(.fontScaled(top: 1.6, bottom: 1.6))
+    }
+
+    public func makeBlockSpacing(
+      configuration _: BlockSpacingConfiguration,
+      environment: TextEnvironmentValues
+    ) -> BlockSpacing {
+      FontScaled.fontScaled(top: 1.6, bottom: 1.6).resolve(in: environment)
     }
   }
 }

@@ -9,7 +9,13 @@ extension StructuredText {
     public func makeBody(configuration: Configuration) -> some View {
       configuration.label
         .textual.lineSpacing(.fontScaled(0.25))
-        .textual.blockSpacing(.init(top: 0, bottom: 16))
+    }
+
+    public func makeBlockSpacing(
+      configuration _: BlockSpacingConfiguration,
+      environment _: TextEnvironmentValues
+    ) -> BlockSpacing {
+      .init(top: 0, bottom: 16)
     }
   }
 }

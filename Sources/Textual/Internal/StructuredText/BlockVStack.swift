@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - Overview
-//
+
 // BlockVStack arranges blocks vertically with CSS-style margin collapsing behavior. Adjacent
 // blocks' top and bottom spacing collapses by taking the maximum value rather than summing,
 // matching how CSS margins work.
@@ -11,7 +11,9 @@ import SwiftUI
 
 extension StructuredText {
   struct BlockVStack<Content: View>: View {
+    @Environment(\.listItemSpacingEnabled) private var listItemSpacingEnabled
     @Environment(\.multilineTextAlignment) private var textAlignment
+    @Environment(\.resolvedListItemSpacing) private var resolvedListItemSpacing
 
     private let content: Content
 
@@ -21,9 +23,12 @@ extension StructuredText {
 
     var body: some View {
       Group(subviews: content) { children in
-        BlockVStackLayout(textAlignment: textAlignment) {
-          ForEach(children) {
-            BlockLayoutView($0)
+        BlockVStackLayout(
+          textAlignment: textAlignment,
+          spacingOverride: listItemSpacingEnabled ? resolvedListItemSpacing : nil
+        ) {
+          ForEach(children) { child in
+            child
           }
         }
       }
@@ -36,54 +41,31 @@ extension StructuredText {
     static let defaultValue: TextAlignment? = nil
   }
 
-  fileprivate struct BlockLayoutView<Content: View>: View {
-    @Environment(\.listItemSpacingEnabled) private var listItemSpacingEnabled
-    @Environment(\.resolvedListItemSpacing) private var resolvedListItemSpacing
-
-    @State private var blockSpacing = BlockSpacing()
-
-    private let content: Content
-
-    init(_ content: Content) {
-      self.content = content
-    }
-
-    var body: some View {
-      // Read the block spacing preference and apply it as a layout value
-      content
-        .onPreferenceChange(BlockSpacingKey.self) { @MainActor value in
-          // Override with the resolved list item spacing if enabled
-          blockSpacing = listItemSpacingEnabled ? resolvedListItemSpacing : value
-        }
-        .layoutValue(key: BlockSpacingKey.self, value: blockSpacing)
-    }
-  }
-
   fileprivate struct BlockVStackLayout: Layout {
     struct Cache {
       let spacings: [CGFloat]
     }
 
     let textAlignment: TextAlignment
+    let spacingOverride: BlockSpacing?
 
     func makeCache(subviews: Subviews) -> Cache {
-      return Cache(
+      Cache(
         spacings: subviews.indices.dropLast().map { index in
           let current = subviews[index]
           let next = subviews[index + 1]
-          let currentBottom = current[BlockSpacingKey.self].bottom
-          let nextTop = next[BlockSpacingKey.self].top
-
-          // Take the maximum block spacing, otherwise the preferred view spacing
-          return [currentBottom, nextTop].compactMap(\.self).max()
-            ?? current.spacing.distance(to: next.spacing, along: .vertical)
+          return spacing(for: current).collapsedDistance(
+            to: spacing(for: next),
+            fallback: current.spacing.distance(to: next.spacing, along: .vertical)
+          )
         }
       )
     }
 
     func sizeThatFits(
       proposal: ProposedViewSize,
-      subviews: Subviews, cache: inout Cache
+      subviews: Subviews,
+      cache: inout Cache
     ) -> CGSize {
       if let width = proposal.width, width <= 0 {
         return .zero
@@ -98,27 +80,26 @@ extension StructuredText {
       }
 
       size.height += cache.spacings.reduce(0, +)
-
       return size
     }
 
     func placeSubviews(
       in bounds: CGRect,
       proposal: ProposedViewSize,
-      subviews: Subviews, cache: inout Cache
+      subviews: Subviews,
+      cache: inout Cache
     ) {
       var currentY: CGFloat = 0
 
       for (index, view) in zip(subviews.indices, subviews) {
         let viewProposal = ProposedViewSize(width: proposal.width, height: nil)
         let viewSize = view.sizeThatFits(viewProposal)
-
         var point = bounds.origin
         let alignment = view[BlockAlignmentKey.self] ?? textAlignment
 
         switch alignment {
         case .leading:
-          break  // do nothing
+          break
         case .center:
           point.x += (bounds.width - viewSize.width) / 2
         case .trailing:
@@ -126,15 +107,17 @@ extension StructuredText {
         }
 
         point.y += currentY
-
         view.place(at: point, proposal: viewProposal)
-
         currentY += viewSize.height
 
         if index < subviews.count - 1 {
           currentY += cache.spacings[index]
         }
       }
+    }
+
+    private func spacing(for subview: LayoutSubview) -> BlockSpacing {
+      spacingOverride ?? subview[BlockSpacingKey.self]
     }
   }
 }

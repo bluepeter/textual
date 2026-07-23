@@ -27,7 +27,7 @@ extension StructuredText {
   ///
   /// Apply a code block style with ``TextualNamespace/codeBlockStyle(_:)`` or through a bundled
   /// ``StructuredText/Style``.
-  public protocol CodeBlockStyle: DynamicProperty {
+  public protocol CodeBlockStyle: DynamicProperty, BlockSpacingProvider {
     associatedtype Body: View
 
     /// Creates a view that represents a code block.

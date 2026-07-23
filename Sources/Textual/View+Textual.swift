@@ -15,17 +15,25 @@ extension View {
 }
 
 extension TextualNamespace where Base: View {
-  /// Sets the spacing above and below the current block.
+  /// Sets layout spacing above and below a direct block-layout child.
+  ///
+  /// A `StructuredText` style should provide its outer spacing through
+  /// ``StructuredText/BlockSpacingProvider`` so the containing document can
+  /// resolve spacing synchronously.
   @MainActor public func blockSpacing(_ blockSpacing: StructuredText.BlockSpacing) -> some View {
-    base.preference(key: StructuredText.BlockSpacingKey.self, value: blockSpacing)
+    base.layoutValue(key: StructuredText.BlockSpacingKey.self, value: blockSpacing)
   }
 
-  /// Sets the spacing above and below the current block using a font-relative value.
+  /// Sets font-relative layout spacing on a direct block-layout child.
+  ///
+  /// A `StructuredText` style should provide its outer spacing through
+  /// ``StructuredText/BlockSpacingProvider`` so the containing document can
+  /// resolve spacing synchronously.
   @MainActor public func blockSpacing(
     _ blockSpacing: FontScaled<StructuredText.BlockSpacing>
   ) -> some View {
     WithFontScaledValue(blockSpacing) { blockSpacing in
-      base.preference(key: StructuredText.BlockSpacingKey.self, value: blockSpacing)
+      base.layoutValue(key: StructuredText.BlockSpacingKey.self, value: blockSpacing)
     }
   }
 

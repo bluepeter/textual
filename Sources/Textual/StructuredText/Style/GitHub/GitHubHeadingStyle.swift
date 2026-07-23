@@ -14,7 +14,6 @@ extension StructuredText {
           makeLabel(configuration: configuration)
             .textual.fontScale(fontScale)
             .textual.lineSpacing(.fontScaled(0.125))
-            .textual.blockSpacing(.init(top: 24, bottom: 16))
             .fontWeight(.semibold)
           if headingLevel <= 2 {
             Divider()
@@ -22,6 +21,13 @@ extension StructuredText {
           }
         }
       }
+    }
+
+    public func makeBlockSpacing(
+      configuration _: BlockSpacingConfiguration,
+      environment _: TextEnvironmentValues
+    ) -> BlockSpacing {
+      .init(top: 24, bottom: 16)
     }
 
     @ViewBuilder

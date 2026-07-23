@@ -5,7 +5,7 @@ extension StructuredText {
   ///
   /// You can apply a thematic break style using the ``TextualNamespace/thematicBreakStyle(_:)`` modifier
   /// or through a bundled ``StructuredText/Style``.
-  public protocol ThematicBreakStyle: DynamicProperty {
+  public protocol ThematicBreakStyle: DynamicProperty, BlockSpacingProvider {
     associatedtype Body: View
 
     /// Creates a view that represents a thematic break.

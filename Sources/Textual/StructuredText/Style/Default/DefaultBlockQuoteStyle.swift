@@ -28,6 +28,13 @@ extension StructuredText {
           .clipShape(RoundedRectangle(cornerRadius: 4))
         }
     }
+
+    public func makeBlockSpacing(
+      configuration _: BlockSpacingConfiguration,
+      environment: TextEnvironmentValues
+    ) -> BlockSpacing {
+      FontScaled.fontScaled(top: 0.8).resolve(in: environment)
+    }
   }
 }
 

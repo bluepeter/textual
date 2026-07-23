@@ -22,7 +22,7 @@ extension StructuredText {
   ///
   /// You can apply a table style using the ``TextualNamespace/tableStyle(_:)`` modifier
   /// or through a bundled ``StructuredText/Style``.
-  public protocol TableStyle: DynamicProperty {
+  public protocol TableStyle: DynamicProperty, BlockSpacingProvider {
     associatedtype Body: View
 
     /// Creates a view that represents a table.

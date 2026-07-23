@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - Overview
-//
+
 // TextFragment renders attributed content as SwiftUI.Text with support for inline
 // attachments, links, and selection. It uses a TextBuilder to construct and cache
 // Text values, minimizing rebuilds during resize by keying on attachment sizes.
@@ -27,7 +27,7 @@ import SwiftUI
 
 struct TextFragment<Content: AttributedStringProtocol>: View {
   @Environment(\.textEnvironment) private var textEnvironment
-  @State private var textBuilder: TextBuilder?
+  @State private var resolver = Resolver()
 
   private let content: Content
 
@@ -36,27 +36,44 @@ struct TextFragment<Content: AttributedStringProtocol>: View {
   }
 
   var body: some View {
-    text
+    let textBuilder = resolver.resolve(content, environment: textEnvironment)
+
+    textBuilder.text
       .customAttribute(TextFragmentAttribute())
       .onGeometryChange(for: CGSize?.self, of: \.textContainerSize) { size in
-        guard let size, let textBuilder else { return }
+        guard let size else { return }
         textBuilder.sizeChanged(size, environment: textEnvironment)
-      }
-      .onChange(of: content, initial: true) { _, newValue in
-        self.textBuilder = TextBuilder(newValue, environment: textEnvironment)
       }
       .modifier(TextSelectionBackground())
       .modifier(AttachmentOverlay(attachments: content.attachments()))
       .modifier(TextLinkInteraction())
   }
+}
 
-  private var text: Text {
-    textBuilder?.text ?? Text(verbatim: "")
+extension TextFragment {
+  @MainActor final class Resolver {
+    private var content: Content?
+    private var environment: TextEnvironmentValues?
+    private var textBuilder: TextBuilder?
+
+    func resolve(_ content: Content, environment: TextEnvironmentValues) -> TextBuilder {
+      if let textBuilder,
+        content == self.content,
+        environment == self.environment
+      {
+        return textBuilder
+      }
+
+      let textBuilder = TextBuilder(content, environment: environment)
+      self.content = content
+      self.environment = environment
+      self.textBuilder = textBuilder
+      return textBuilder
+    }
   }
 }
 
-struct TextFragmentAttribute: TextAttribute {
-}
+struct TextFragmentAttribute: TextAttribute {}
 
 extension Text.Layout {
   var isTextFragment: Bool {

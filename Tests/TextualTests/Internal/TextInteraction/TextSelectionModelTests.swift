@@ -877,6 +877,62 @@
       #expect(result == model.endPosition)
     }
 
+    @Test
+    func selectionSnapshotUsesUTF16OffsetsWithinOneBlock() throws {
+      let model = try TextSelectionModel(fixtureName: "two-paragraphs-bidi")
+      let start = try #require(model.position(from: model.startPosition, offset: 53))
+      let end = try #require(model.position(from: model.startPosition, offset: 65))
+      let range = TextRange(start: start, end: end)
+
+      let snapshot = try #require(model.selectionSnapshot(in: range))
+
+      #expect(snapshot.utf16Range == 53..<65)
+      #expect(snapshot.blockUTF16Range == 2..<14)
+      #expect(snapshot.selectedText == utf16Slice(snapshot.documentText, at: snapshot.utf16Range))
+      #expect(snapshot.selectedText == utf16Slice(snapshot.blockText, at: snapshot.blockUTF16Range))
+      #expect(snapshot.blockKind == .prose)
+    }
+
+    @Test
+    func selectionSnapshotPreservesBidirectionalUnicode() throws {
+      let model = try TextSelectionModel(fixtureName: "two-paragraphs-bidi")
+      let start = try #require(model.position(from: model.startPosition, offset: 42))
+      let end = try #require(model.position(from: model.startPosition, offset: 51))
+
+      let snapshot = try #require(
+        model.selectionSnapshot(in: TextRange(start: start, end: end))
+      )
+
+      #expect(snapshot.selectedText == utf16Slice(snapshot.documentText, at: 42..<51))
+      #expect(snapshot.selectedText.utf16.count == 9)
+    }
+
+    @Test
+    func selectionSnapshotRejectsCollapsedAndCrossBlockRanges() throws {
+      let model = try TextSelectionModel(fixtureName: "two-paragraphs-bidi")
+      let crossBlockStart = try #require(model.position(from: model.startPosition, offset: 50))
+      let crossBlockEnd = try #require(model.position(from: model.startPosition, offset: 55))
+
+      #expect(
+        model.selectionSnapshot(
+          in: TextRange(start: model.startPosition, end: model.startPosition)
+        ) == nil
+      )
+      #expect(
+        model.selectionSnapshot(in: TextRange(start: crossBlockStart, end: crossBlockEnd)) == nil
+      )
+    }
+
+    @Test
+    func persistentSelectionRectsRejectInvalidUTF16Ranges() throws {
+      let model = try TextSelectionModel(fixtureName: "two-paragraphs-bidi")
+
+      #expect(model.selectionRects(forUTF16Range: -1..<4).isEmpty)
+      #expect(model.selectionRects(forUTF16Range: 4..<4).isEmpty)
+      #expect(model.selectionRects(forUTF16Range: 0..<103).isEmpty)
+      #expect(!model.selectionRects(forUTF16Range: 0..<4).isEmpty)
+    }
+
     #if os(iOS)
       @Test(.disabled())
       @MainActor
@@ -892,6 +948,13 @@
         try TextSelectionModel.recordFixture(for: view, named: "two-paragraphs-bidi")
       }
     #endif
+
+    private func utf16Slice(_ text: String, at range: Range<Int>) -> String {
+      let utf16 = text.utf16
+      let lowerBound = utf16.index(utf16.startIndex, offsetBy: range.lowerBound)
+      let upperBound = utf16.index(utf16.startIndex, offsetBy: range.upperBound)
+      return String(decoding: utf16[lowerBound..<upperBound], as: UTF16.self)
+    }
   }
 
   extension TextSelectionRect {

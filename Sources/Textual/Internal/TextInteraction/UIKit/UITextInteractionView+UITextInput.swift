@@ -181,5 +181,24 @@
       guard let rangeBox = range as? TextRangeBox else { return .init() }
       return model.attributedText(in: rangeBox.wrappedValue)
     }
+
+    func editMenu(
+      for textRange: UITextRange,
+      suggestedActions: [UIMenuElement]
+    ) -> UIMenu? {
+      guard let selectionAction,
+        let rangeBox = textRange as? TextRangeBox,
+        let snapshot = model.selectionSnapshot(in: rangeBox.wrappedValue),
+        selectionAction.isAvailable(snapshot)
+      else { return nil }
+
+      let customAction = UIAction(
+        title: selectionAction.title,
+        image: selectionAction.systemImage.flatMap(UIImage.init(systemName:))
+      ) { _ in
+        selectionAction.perform(snapshot)
+      }
+      return UIMenu(children: suggestedActions + [customAction])
+    }
   }
 #endif

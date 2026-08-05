@@ -15,5 +15,13 @@ extension StructuredText {
     public let label: Label
     /// The indentation level of the block within the document structure.
     public let indentationLevel: Int
+    /// Rendered plain text for this block when it has textual content.
+    public let plainText: String
+
+    init(label: Label, indentationLevel: Int, plainText: String = "") {
+      self.label = label
+      self.indentationLevel = indentationLevel
+      self.plainText = plainText
+    }
   }
 }

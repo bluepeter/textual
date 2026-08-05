@@ -16,9 +16,11 @@
     @State private var cursorPushed = false
 
     private let model: TextSelectionModel
+    private let selectionAction: TextSelectionAction?
 
-    init(model: TextSelectionModel) {
+    init(model: TextSelectionModel, selectionAction: TextSelectionAction?) {
       self.model = model
+      self.selectionAction = selectionAction
     }
 
     func body(content: Content) -> some View {
@@ -32,10 +34,14 @@
         // causing it to intercept mouse events outside its visible bounds.
         .geometryGroup()
         .overlayPreferenceValue(OverflowFrameKey.self) { frames in
-          AppKitTextInteractionOverlay(model: model, overflowFrames: frames)
-            .onContinuousHover { phase in
-              updateCursor(for: phase, model: model)
-            }
+          AppKitTextInteractionOverlay(
+            model: model,
+            overflowFrames: frames,
+            selectionAction: selectionAction
+          )
+          .onContinuousHover { phase in
+            updateCursor(for: phase, model: model)
+          }
         }
     }
 

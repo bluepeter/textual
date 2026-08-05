@@ -14,6 +14,8 @@ import SwiftUI
 struct TextSelectionInteraction: ViewModifier {
   #if TEXTUAL_ENABLE_TEXT_SELECTION
     @Environment(\.textSelection) private var textSelection
+    @Environment(\.textSelectionAction) private var textSelectionAction
+    @Environment(\.textSelectionHighlights) private var textSelectionHighlights
     @Environment(TextSelectionCoordinator.self) private var coordinator: TextSelectionCoordinator?
 
     @State private var model = TextSelectionModel()
@@ -23,6 +25,12 @@ struct TextSelectionInteraction: ViewModifier {
     #if TEXTUAL_ENABLE_TEXT_SELECTION
       if textSelection.allowsSelection {
         content
+          .background {
+            PersistentTextSelectionHighlights(
+              model: model,
+              style: textSelectionHighlights
+            )
+          }
           .overlayTextLayoutCollection { layoutCollection in
             Color.clear
               .onChange(of: AnyTextLayoutCollection(layoutCollection), initial: true) {
@@ -30,7 +38,11 @@ struct TextSelectionInteraction: ViewModifier {
                 model.setLayoutCollection(layoutCollection)
               }
           }
-          .modifier(PlatformTextSelectionInteraction(model: model))
+          .modifier(
+            PlatformTextSelectionInteraction(
+              model: model,
+              selectionAction: textSelectionAction
+            ))
       } else {
         content
       }
@@ -46,5 +58,7 @@ struct TextSelectionInteraction: ViewModifier {
     @available(watchOS, unavailable)
     @usableFromInline
     @Entry var textSelection: any TextSelectability.Type = DisabledTextSelectability.self
+    @Entry var textSelectionAction: TextSelectionAction?
+    @Entry var textSelectionHighlights = TextSelectionHighlightsStyle()
   }
 #endif

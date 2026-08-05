@@ -13,7 +13,8 @@ extension StructuredText {
     var body: some View {
       let configuration = BlockStyleConfiguration(
         label: .init(label),
-        indentationLevel: indentationLevel
+        indentationLevel: indentationLevel,
+        plainText: String(content.characters)
       )
       let resolvedStyle = paragraphStyle.resolve(configuration: configuration)
 

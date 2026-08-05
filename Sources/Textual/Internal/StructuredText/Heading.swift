@@ -16,7 +16,8 @@ extension StructuredText {
       let configuration = HeadingStyleConfiguration(
         label: .init(label),
         indentationLevel: indentationLevel,
-        headingLevel: level
+        headingLevel: level,
+        plainText: String(content.characters)
       )
       let resolvedStyle = headingStyle.resolve(configuration: configuration)
 

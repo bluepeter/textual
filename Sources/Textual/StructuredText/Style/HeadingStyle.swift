@@ -17,6 +17,20 @@ extension StructuredText {
     public let indentationLevel: Int
     /// The heading level, from `1` (most prominent) to `6` (least prominent).
     public let headingLevel: Int
+    /// Rendered plain text for this heading.
+    public let plainText: String
+
+    init(
+      label: Label,
+      indentationLevel: Int,
+      headingLevel: Int,
+      plainText: String = ""
+    ) {
+      self.label = label
+      self.indentationLevel = indentationLevel
+      self.headingLevel = headingLevel
+      self.plainText = plainText
+    }
   }
 
   /// A style that controls how `StructuredText` renders headings.

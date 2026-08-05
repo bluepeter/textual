@@ -20,6 +20,7 @@
     var model: TextSelectionModel
     var exclusionRects: [CGRect]
     var openURL: OpenURLAction
+    var selectionAction: TextSelectionAction?
 
     weak var inputDelegate: (any UITextInputDelegate)?
 
@@ -31,11 +32,13 @@
     init(
       model: TextSelectionModel,
       exclusionRects: [CGRect],
-      openURL: OpenURLAction
+      openURL: OpenURLAction,
+      selectionAction: TextSelectionAction?
     ) {
       self.model = model
       self.exclusionRects = exclusionRects
       self.openURL = openURL
+      self.selectionAction = selectionAction
       self.selectionInteraction = UITextInteraction(for: .nonEditable)
 
       super.init(frame: .zero)

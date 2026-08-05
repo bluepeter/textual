@@ -13,6 +13,7 @@
 
   @Observable
   final class TextSelectionModel {
+    private(set) var layoutRevision = 0
     var selectedRange: TextRange? {
       willSet {
         selectionWillChange?()
@@ -52,6 +53,7 @@
 
       let oldLayoutCollection = self.layoutCollection
       self.layoutCollection = layoutCollection
+      layoutRevision &+= 1
 
       guard
         let selectedRange,
@@ -100,6 +102,56 @@
 
     func attributedText(in range: TextRange) -> NSAttributedString {
       layoutCollection.attributedText(in: range)
+    }
+
+    func selectionSnapshot(in range: TextRange? = nil) -> TextSelectionSnapshot? {
+      guard let range = range ?? selectedRange,
+        !range.isCollapsed,
+        range.start.indexPath.layout == range.end.indexPath.layout
+      else {
+        return nil
+      }
+
+      let layoutIndex = range.start.indexPath.layout
+      guard layoutCollection.layouts.indices.contains(layoutIndex) else {
+        return nil
+      }
+
+      let block = layoutCollection.layouts[layoutIndex].attributedString
+      let blockStart = layoutCollection.layouts.prefix(layoutIndex)
+        .map(\.attributedString.length)
+        .reduce(0, +)
+      let start = layoutCollection.characterIndex(at: range.start)
+      let end = layoutCollection.characterIndex(at: range.end)
+      let localRange = (start - blockStart)..<(end - blockStart)
+      guard localRange.lowerBound >= 0, localRange.upperBound <= block.length else {
+        return nil
+      }
+
+      let selectedText = block.attributedSubstring(from: NSRange(localRange)).string
+      guard !selectedText.isEmpty else { return nil }
+
+      return TextSelectionSnapshot(
+        selectedText: selectedText,
+        documentText: layoutCollection.layouts.map(\.attributedString.string).joined(),
+        blockText: block.string,
+        utf16Range: start..<end,
+        blockUTF16Range: localRange,
+        blockKind: block.selectionBlockKind
+      )
+    }
+
+    func selectionRects(forUTF16Range range: Range<Int>) -> [TextSelectionRect] {
+      guard range.lowerBound >= 0,
+        range.lowerBound < range.upperBound,
+        range.upperBound <= layoutCollection.stringLength,
+        let start = layoutCollection.position(
+          from: layoutCollection.startPosition, offset: range.lowerBound),
+        let end = layoutCollection.position(
+          from: layoutCollection.startPosition, offset: range.upperBound)
+      else { return [] }
+
+      return layoutCollection.selectionRects(for: TextRange(start: start, end: end))
     }
 
     func text(in range: TextRange) -> String {
@@ -188,6 +240,31 @@
     @available(visionOS, unavailable)
     func previousWord(from position: TextPosition) -> TextPosition? {
       layoutCollection.previousWord(from: position)
+    }
+  }
+
+  extension NSAttributedString {
+    fileprivate var selectionBlockKind: TextSelectionSnapshot.BlockKind {
+      guard length > 0 else { return .unsupported }
+
+      var result = TextSelectionSnapshot.BlockKind.unsupported
+      enumerateAttribute(
+        .textual.presentationIntent,
+        in: NSRange(location: 0, length: length)
+      ) { value, _, stop in
+        guard let intent = value as? PresentationIntent,
+          let kind = intent.components.first?.kind
+        else { return }
+
+        switch kind {
+        case .paragraph, .header:
+          result = .prose
+          stop.pointee = true
+        default:
+          break
+        }
+      }
+      return result
     }
   }
 #endif

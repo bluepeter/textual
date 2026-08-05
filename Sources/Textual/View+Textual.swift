@@ -165,6 +165,24 @@ extension TextualNamespace where Base: View {
     #endif
   }
 
+  #if TEXTUAL_ENABLE_TEXT_SELECTION
+    /// Appends a custom action to the system menu for a rendered-text selection.
+    public func textSelectionAction(_ action: TextSelectionAction?) -> some View {
+      base.environment(\.textSelectionAction, action)
+    }
+
+    /// Highlights persistent rendered-text ranges without changing the source markup.
+    public func textSelectionHighlights(
+      _ highlights: [TextSelectionHighlight],
+      color: Color = .accentColor
+    ) -> some View {
+      base.environment(
+        \.textSelectionHighlights,
+        .init(highlights: highlights, color: color)
+      )
+    }
+  #endif
+
   /// Sets the spacing used between table cells in ``StructuredText``.
   public func tableCellSpacing(
     horizontal: CGFloat? = nil,

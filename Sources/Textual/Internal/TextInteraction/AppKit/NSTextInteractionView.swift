@@ -14,6 +14,7 @@
     var model: TextSelectionModel
     var exclusionRects: [CGRect]
     var openURL: OpenURLAction
+    var selectionAction: TextSelectionAction?
 
     override var acceptsFirstResponder: Bool { true }
     override var isFlipped: Bool { true }
@@ -24,11 +25,13 @@
     init(
       model: TextSelectionModel,
       exclusionRects: [CGRect],
-      openURL: OpenURLAction
+      openURL: OpenURLAction,
+      selectionAction: TextSelectionAction?
     ) {
       self.model = model
       self.exclusionRects = exclusionRects
       self.openURL = openURL
+      self.selectionAction = selectionAction
 
       super.init(frame: .zero)
       self.wantsLayer = false
@@ -218,6 +221,22 @@
         )
       )
 
+      if let selectionAction,
+        let snapshot = model.selectionSnapshot(in: selectedRange),
+        selectionAction.isAvailable(snapshot)
+      {
+        contextMenu.addItem(.separator())
+        let item = NSMenuItem(
+          title: selectionAction.title,
+          action: #selector(performSelectionAction(_:)),
+          keyEquivalent: ""
+        )
+        if let systemImage = selectionAction.systemImage {
+          item.image = NSImage(systemSymbolName: systemImage, accessibilityDescription: nil)
+        }
+        contextMenu.addItem(item)
+      }
+
       return contextMenu
     }
 
@@ -287,6 +306,15 @@
       pasteboard.setString(formatter.plainText(), forType: .string)
       pasteboard.setString(formatter.html(), forType: .html)
     }
+
+    @objc private func performSelectionAction(_ sender: Any?) {
+      guard let selectionAction,
+        let snapshot = model.selectionSnapshot(),
+        selectionAction.isAvailable(snapshot)
+      else { return }
+
+      selectionAction.perform(snapshot)
+    }
   }
 
   extension NSTextInteractionView: NSUserInterfaceValidations {
@@ -299,6 +327,11 @@
           return false
         }
         return !selectedRange.isCollapsed
+      case #selector(performSelectionAction(_:)):
+        guard let selectionAction,
+          let snapshot = model.selectionSnapshot()
+        else { return false }
+        return selectionAction.isAvailable(snapshot)
       case #selector(moveRightAndModifySelection(_:)),
         #selector(moveLeftAndModifySelection(_:)),
         #selector(moveUpAndModifySelection(_:)),

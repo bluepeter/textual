@@ -17,6 +17,16 @@
       true
     }
 
+    override func resignFirstResponder() -> Bool {
+      let didResign = super.resignFirstResponder()
+      if didResign {
+        // UIKit owns the selection UI, but Textual owns the backing range.
+        // Keep both lifecycles aligned when focus moves elsewhere.
+        selectedTextRange = nil
+      }
+      return didResign
+    }
+
     var model: TextSelectionModel
     var exclusionRects: [CGRect]
     var openURL: OpenURLAction
@@ -112,10 +122,11 @@
 
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
       let location = gesture.location(in: self)
-      guard let url = model.url(for: location) else {
-        return
+      let url = model.url(for: location)
+      _ = window?.endEditing(false)
+      if let url {
+        openURL(url)
       }
-      openURL(url)
     }
 
     @objc private func share(_ sender: Any?) {

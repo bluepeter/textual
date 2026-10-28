@@ -1,4 +1,4 @@
-#if TEXTUAL_ENABLE_TEXT_SELECTION && canImport(UIKit)
+#if TEXTUAL_ENABLE_TEXT_SELECTION && canImport(UIKit) && !targetEnvironment(macCatalyst)
   import SwiftUI
   import Testing
   import UIKit

@@ -52,6 +52,7 @@ LANGUAGES=(
   "kotlin"
   "scala"
   "groovy"
+  "clojure"
 
   # .NET ecosystem
   "csharp"
@@ -70,6 +71,10 @@ LANGUAGES=(
   "haskell"
   "ocaml"
   "reason"
+
+  # Lisp dialects
+  "lisp"
+  "scheme"
 
   # Modern languages
   "dart"
@@ -138,10 +143,10 @@ for lang in "${LANGUAGES[@]}"; do
   # Try to download, skip if 404
   if curl -sS -f "$LANG_URL" >> "$TEMP_DIR/bundle.js" 2>/dev/null; then
     echo "" >> "$TEMP_DIR/bundle.js"
-    ((SUCCESS_COUNT++))
+    ((SUCCESS_COUNT += 1))
   else
     echo "⚠️  Language '$lang' not found, skipping..."
-    ((FAILED_COUNT++))
+    ((FAILED_COUNT += 1))
   fi
 done
 

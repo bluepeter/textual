@@ -30,7 +30,8 @@
         model: model,
         exclusionRects: overflowFrames,
         openURL: context.environment.openURL,
-        selectionAction: selectionAction
+        selectionAction: selectionAction,
+        selectionLookup: context.environment.textSelectionLookup
       )
     }
 
@@ -39,6 +40,7 @@
       nsView.exclusionRects = overflowFrames
       nsView.openURL = context.environment.openURL
       nsView.selectionAction = selectionAction
+      nsView.selectionLookup = context.environment.textSelectionLookup
     }
   }
 #endif

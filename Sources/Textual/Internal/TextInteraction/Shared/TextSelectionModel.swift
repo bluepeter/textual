@@ -104,6 +104,23 @@
       layoutCollection.attributedText(in: range)
     }
 
+    func lookupSelection(in range: TextRange? = nil) -> TextLookupSelection? {
+      guard let range = range ?? selectedRange, !range.isCollapsed else { return nil }
+      let attributedText = layoutCollection.attributedText(in: range)
+      guard !attributedText.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      else { return nil }
+
+      let sourceRect = layoutCollection.firstRect(for: range)
+      guard !sourceRect.isNull, !sourceRect.isEmpty else { return nil }
+      let layout = layoutCollection.layouts[range.start.indexPath.layout]
+      let line = layout.lines[range.start.indexPath.line]
+      return TextLookupSelection(
+        attributedText: attributedText,
+        sourceRect: sourceRect,
+        baselineOrigin: CGPoint(x: sourceRect.minX, y: layout.origin.y + line.origin.y)
+      )
+    }
+
     func selectionSnapshot(in range: TextRange? = nil) -> TextSelectionSnapshot? {
       guard let range = range ?? selectedRange,
         !range.isCollapsed,

@@ -10,15 +10,24 @@
   // so embedded scrollable regions continue to receive input events. Link taps are forwarded to
   // `openURL`.
 
-  final class NSTextInteractionView: NSView {
+  final class NSTextInteractionView: NSView, @MainActor NSViewContentSelectionInfo {
     var model: TextSelectionModel
     var exclusionRects: [CGRect]
     var openURL: OpenURLAction
     var selectionAction: TextSelectionAction?
+    var selectionLookup: TextSelectionLookup?
 
     override var acceptsFirstResponder: Bool { true }
     override var isFlipped: Bool { true }
     override var mouseDownCanMoveWindow: Bool { false }
+
+    var selectionAnchorRect: NSRect {
+      guard let selectedRange = model.selectedRange else { return bounds }
+      // Anchor keyboard and accessibility menus within an actual selected span.
+      let rect = model.selectionRects(for: selectedRange).first?.rect
+        ?? model.firstRect(for: selectedRange)
+      return rect.isNull || rect.isEmpty ? bounds : rect
+    }
 
     private var dragStart: TextPosition?
     private var selectionAnchor: TextPosition?
@@ -27,12 +36,14 @@
       model: TextSelectionModel,
       exclusionRects: [CGRect],
       openURL: OpenURLAction,
-      selectionAction: TextSelectionAction?
+      selectionAction: TextSelectionAction?,
+      selectionLookup: TextSelectionLookup? = nil
     ) {
       self.model = model
       self.exclusionRects = exclusionRects
       self.openURL = openURL
       self.selectionAction = selectionAction
+      self.selectionLookup = selectionLookup
 
       super.init(frame: .zero)
       self.wantsLayer = false
@@ -113,6 +124,26 @@
       updateSelectionForContextMenu(at: location)
 
       return makeContextMenu()
+    }
+
+    override func quickLook(with event: NSEvent) {
+      guard selectionLookup != nil else {
+        super.quickLook(with: event)
+        return
+      }
+      let location = convert(event.locationInWindow, from: nil)
+      updateSelectionForContextMenu(at: location)
+      guard let selection = model.lookupSelection(), presentLookup(selection) else {
+        super.quickLook(with: event)
+        return
+      }
+    }
+
+    override func quickLookPreviewItems(_ sender: Any?) {
+      guard let selection = model.lookupSelection(), presentLookup(selection) else {
+        nextResponder?.tryToPerform(#selector(quickLookPreviewItems(_:)), with: sender)
+        return
+      }
     }
 
     override func selectAll(_ sender: Any?) {
@@ -222,6 +253,18 @@
         )
       )
 
+      if let selectionLookup, let selection = model.lookupSelection() {
+        contextMenu.addItem(.separator())
+        let item = NSMenuItem(
+          title: selectionLookup.title,
+          action: #selector(lookUpSelection(_:)),
+          keyEquivalent: ""
+        )
+        item.setAccessibilityIdentifier("textual.lookUp")
+        item.representedObject = selection
+        contextMenu.addItem(item)
+      }
+
       if let selectionAction,
         let snapshot = model.selectionSnapshot(in: selectedRange),
         selectionAction.isAvailable(snapshot)
@@ -235,6 +278,7 @@
         if let systemImage = selectionAction.systemImage {
           item.image = NSImage(systemSymbolName: systemImage, accessibilityDescription: nil)
         }
+        item.setAccessibilityIdentifier("textual.selectionAction")
         contextMenu.addItem(item)
       }
 
@@ -328,6 +372,8 @@
           return false
         }
         return !selectedRange.isCollapsed
+      case #selector(lookUpSelection(_:)), #selector(quickLookPreviewItems(_:)):
+        return selectionLookup != nil && model.lookupSelection() != nil
       case #selector(performSelectionAction(_:)):
         guard let selectionAction,
           let snapshot = model.selectionSnapshot()

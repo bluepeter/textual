@@ -173,6 +173,14 @@ extension TextualNamespace where Base: View {
       base.environment(\.textSelectionAction, action)
     }
 
+    /// Adds native dictionary lookup without exposing selected content to the callback.
+    public func textSelectionLookup(
+      title: String,
+      onRequest: @escaping @MainActor () -> Void = {}
+    ) -> some View {
+      base.environment(\.textSelectionLookup, .init(title: title, onRequest: onRequest))
+    }
+
     /// Highlights persistent rendered-text ranges without changing the source markup.
     public func textSelectionHighlights(
       _ highlights: [TextSelectionHighlight],

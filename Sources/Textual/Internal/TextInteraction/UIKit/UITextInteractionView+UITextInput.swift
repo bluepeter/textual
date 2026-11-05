@@ -186,19 +186,27 @@
       for textRange: UITextRange,
       suggestedActions: [UIMenuElement]
     ) -> UIMenu? {
-      guard let selectionAction,
-        let rangeBox = textRange as? TextRangeBox,
+      guard let rangeBox = textRange as? TextRangeBox else { return nil }
+      var additionalActions: [UIMenuElement] = []
+      if let lookupAction = lookupAction(in: rangeBox.wrappedValue) {
+        additionalActions.append(lookupAction)
+      }
+      if let selectionAction,
         let snapshot = model.selectionSnapshot(in: rangeBox.wrappedValue),
         selectionAction.isAvailable(snapshot)
-      else { return nil }
-
-      let customAction = UIAction(
-        title: selectionAction.title,
-        image: selectionAction.systemImage.flatMap(UIImage.init(systemName:))
-      ) { _ in
-        selectionAction.perform(snapshot)
+      {
+        let customAction = UIAction(
+          title: selectionAction.title,
+          image: selectionAction.systemImage.flatMap(UIImage.init(systemName:)),
+          identifier: UIAction.Identifier("textual.selectionAction")
+        ) { _ in
+          selectionAction.perform(snapshot)
+        }
+        customAction.accessibilityIdentifier = "textual.selectionAction"
+        additionalActions.append(customAction)
       }
-      return UIMenu(children: suggestedActions + [customAction])
+      guard !additionalActions.isEmpty else { return nil }
+      return UIMenu(children: suggestedActions + additionalActions)
     }
   }
 #endif
